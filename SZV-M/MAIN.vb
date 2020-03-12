@@ -1276,53 +1276,7 @@ Public Class MAIN
         LBL_STATE.Text = "Завершено. Файл с отчетом находится в папке с программой."
         PB_PROGRESS.Style = ProgressBarStyle.Blocks
     End Sub
-    Public Function GetDBStatus() As Integer
-        Dim response As Integer
-        Dim sqlite_con As New SQLite.SQLiteConnection()
-        Dim cmd As SQLite.SQLiteCommand
-        sqlite_con.ConnectionString = "Data Source=" & Application.StartupPath & "\database.sqlite;"
-        sqlite_con.Open()
-        ''GET info
-        cmd = sqlite_con.CreateCommand
-        cmd.CommandText = "SELECT PARAM_VALUE FROM DB_SETTINGS WHERE PARAM_NAME = 'DB_STATE'"
-        response = cmd.ExecuteScalar
-        Return response
-    End Function
-    Public Sub SetDBStatus(status As String)
 
-        Dim sqlite_con As New SQLite.SQLiteConnection()
-        Dim cmd As SQLite.SQLiteCommand
-        sqlite_con.ConnectionString = "Data Source=" & Application.StartupPath & "\database.sqlite;"
-        sqlite_con.Open()
-        ''GET info
-        cmd = sqlite_con.CreateCommand
-        cmd.CommandText = "UPDATE DB_SETTINGS SET PARAM_VALUE ='" & status & "' WHERE PARAM_NAME = 'DB_STATE'"
-        cmd.ExecuteNonQuery()
-    End Sub
-    Public Function GetDBParam(ParamName As String) As String
-        Dim sqlite_con As New SQLite.SQLiteConnection()
-        Dim cmd As SQLite.SQLiteCommand
-        sqlite_con.ConnectionString = "Data Source=" & Application.StartupPath & "\database.sqlite;"
-        sqlite_con.Open()
-        ''GET info
-        cmd = sqlite_con.CreateCommand
-        cmd.CommandText = "Select PARAM_VALUE from DB_SETTINGS where PARAM_NAME ='" & ParamName & "'"
-        Return cmd.ExecuteScalar()
-
-
-    End Function
-    Public Sub SetDBParam(ParamName As String, ParamValue As String)
-        '   MsgBox(String.Format("PARAM UPDTATE {0} : {1}", ParamName, ParamValue))
-        Dim sqlite_con As New SQLite.SQLiteConnection()
-        Dim cmd As SQLite.SQLiteCommand
-        sqlite_con.ConnectionString = "Data Source=" & Application.StartupPath & "\database.sqlite;"
-        sqlite_con.Open()
-        ''GET info
-        cmd = sqlite_con.CreateCommand
-        cmd.CommandText = "UPDATE DB_SETTINGS SET PARAM_VALUE ='" & ParamValue & "' WHERE PARAM_NAME = '" & ParamName & "'"
-        cmd.ExecuteNonQuery()
-
-    End Sub
     Private Sub BTN_SETTINGS_Click(sender As Object, e As EventArgs) Handles BTN_SETTINGS.Click
         SZVM_CONFIG.Show()
     End Sub

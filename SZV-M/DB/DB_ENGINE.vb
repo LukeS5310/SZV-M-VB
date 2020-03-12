@@ -25,20 +25,6 @@ Public Class DB_ENGINE
         Return conn
     End Function
 
-    Public Function CleanUp() As Boolean
-        Try
-            conn.Open()
-            Dim cmd As New SQLiteCommand(conn)
-            cmd.CommandText = "DELETE FROM ADR_DO; DELETE FROM ADR_PO; DELETE FROM PERSON_DO; DELETE FROM PERSON_PO; DELETE FROM VPL_DO; DELETE FROM VPL_PO; DELETE FROM PASP_DUPES; VACUUM"
-            cmd.ExecuteNonQuery()
-            conn.Close()
-        Catch ex As Exception
-            MsgBox(ex.Message)
-            Return False
-        End Try
-        Return True
-    End Function
-
     Public Function RunSimpleCmd(cmdtext As String) As Boolean
         Try
             Dim cmd As New SQLiteCommand(Open())

@@ -91,7 +91,8 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DB_ENGINE.vb" />
+    <Compile Include="DB\DB_ENGINE.vb" />
+    <Compile Include="DB\DB_OPERATIONS.vb" />
     <Compile Include="MAIN.vb">
       <SubType>Form</SubType>
     </Compile>
