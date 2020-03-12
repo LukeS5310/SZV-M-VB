@@ -9,8 +9,6 @@ Public Class MAIN
     Dim DB_RA As Short
 #End Region
 
-
-
     Dim x As Process = Process.GetCurrentProcess()
     Dim CurrState As String = ""
 
@@ -23,8 +21,6 @@ Public Class MAIN
         If IO.Directory.Exists(Application.StartupPath & "\PO") = False Then
             IO.Directory.CreateDirectory(Application.StartupPath & "\PO")
         End If
-        'CleanUP(0)
-        '' MsgBox("START " & My.Settings.MAN_md5)
         Optimize_Base()
         CB_MONTH.SelectedIndex = Date.Now.Month - 1
     End Sub
@@ -61,62 +57,7 @@ Public Class MAIN
         cmd.CommandText = "VACUUM"
         cmd.ExecuteNonQuery()
     End Sub
-    Enum CleanType
-        ALL
-        ONLY_DO
-        ONLY_PO
-        ONLY_DO_PO
-        ONLY_MAN
-        ONLY_PE
-        ONLY_WPR
-    End Enum
 
-    Public Sub CleanUP(Typ As CleanType)
-
-        Dim sqlite_con As New SQLite.SQLiteConnection()
-        Dim cmd As SQLite.SQLiteCommand
-        sqlite_con.ConnectionString = "Data Source=" & Application.StartupPath & "\database.sqlite;"
-        sqlite_con.Open()
-
-        cmd = sqlite_con.CreateCommand
-        Select Case Typ
-            Case CleanType.ALL
-                '' MsgBox("ALL")
-                cmd.CommandText = "DELETE FROM MAN;DELETE FROM PE; DELETE FROM PAY_DO; DELETE FROM PAY_PO; DELETE FROM POPEN_DO; DELETE FROM POPEN_PO; DELETE FROM RECIP_DO; DELETE FROM RECIP_PO;DELETE FROM IND4; DELETE FROM WPR"
-                SetDBParam("PE_MD5", "0")
-                SetDBParam("MAN_MD5", "0")
-                '  My.Settings.WPR_md5 = ""
-                cmd.ExecuteNonQuery()
-                SetDBStatus(0)
-            Case CleanType.ONLY_DO
-                cmd.CommandText = "DELETE FROM MAN;DELETE FROM PE; DELETE FROM PAY_DO; DELETE FROM POPEN_DO; DELETE FROM RECIP_DO;DELETE FROM IND4"
-                cmd.ExecuteNonQuery()
-            Case CleanType.ONLY_PO
-                cmd.CommandText = "DELETE FROM PAY_PO; DELETE FROM POPEN_PO; DELETE FROM RECIP_PO;DELETE FROM IND4"
-                cmd.ExecuteNonQuery()
-            Case CleanType.ONLY_DO_PO
-                cmd.CommandText = "DELETE FROM PAY_DO; DELETE FROM PAY_PO; DELETE FROM POPEN_DO; DELETE FROM POPEN_PO; DELETE FROM RECIP_DO; DELETE FROM RECIP_PO;DELETE FROM IND4"
-                cmd.ExecuteNonQuery()
-                SetDBStatus(0)
-            Case CleanType.ONLY_MAN
-                SetDBParam("MAN_MD5", "0")
-                cmd.CommandText = "DELETE FROM MAN"
-                cmd.ExecuteNonQuery()
-            Case CleanType.ONLY_PE
-                SetDBParam("PE_MD5", "0")
-                cmd.CommandText = "DELETE FROM PE"
-                cmd.ExecuteNonQuery()
-            Case CleanType.ONLY_WPR
-                'My.Settings.WPR_md5 = ""
-                cmd.CommandText = "DELETE FROM WPR"
-                cmd.ExecuteNonQuery()
-        End Select
-        cmd.CommandText = "VACUUM"
-        cmd.ExecuteNonQuery()
-        My.Settings.Save()
-        'LBL_STATE.Text = StatusName(GetDBStatus)
-
-    End Sub
     Private Sub Mem_Timer_Tick(sender As Object, e As EventArgs) Handles Mem_Timer.Tick
         x = Process.GetCurrentProcess()
         Dim inf As String
@@ -176,12 +117,6 @@ Public Class MAIN
 
                 Exit Sub
             End Try
-
-
-
-            'CLEANUP MAN
-            ' Erase man_strings
-
 
             Try
 
@@ -443,7 +378,7 @@ Public Class MAIN
                     End If
                 End While
                 transact.Commit()
-                cmd.CommandText = "SELECT RA FROM PAY_DO LIMIT 1"
+                cmd.CommandText = "SELECT DISTINCT RA FROM PAY_DO LIMIT 1"
                 DB_RA = cmd.ExecuteScalar
             Catch ex As Exception
                 MsgBox(String.Join(Environment.NewLine, "Обнаружена ошибка!", ex.Message, cmd.CommandText))
@@ -482,10 +417,10 @@ Public Class MAIN
 
         End If
         ' Erase popen_po_strings
-        cmd.CommandText = " PRAGMA optimize"
-        cmd.ExecuteNonQuery()
-        sqlite_con.Close()
+
         transact.Dispose()
+        sqlite_con.Close()
+
         sqlite_con.Dispose()
     End Sub
 
