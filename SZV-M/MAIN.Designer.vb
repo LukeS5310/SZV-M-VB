@@ -142,7 +142,7 @@ Partial Class MAIN
         Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle
         Me.MaximizeBox = False
         Me.Name = "MAIN"
-        Me.Text = "СЗВ-М 1.0 RC1"
+        Me.Text = "СЗВ-М 1.0 RC2"
         Me.StatusStrip1.ResumeLayout(False)
         Me.StatusStrip1.PerformLayout()
         Me.ResumeLayout(False)

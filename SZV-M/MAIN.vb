@@ -460,6 +460,8 @@ Public Class MAIN
             Dim inf As MAN_INFO = MAIN.GetManInfo(MAN_ID)
             Dim winf As WORK_STATUS = MAIN.GetWorkState(MAN_ID)
             Dim NazDate As String = ""
+            Dim RDAT As String = ""
+            Dim AGE As String = ""
             Dim count As Integer = 0
             If inf.NAZN = "" Then
                 NazDate = "Н/Д"
@@ -468,11 +470,20 @@ Public Class MAIN
                 NazDate = DateNazn.ToString().Replace(" 0:00:00", "")
 
             End If
+            If inf.RDAT = "" Then
+                RDAT = "Н\Д"
+                AGE = "Н\Д"
+            Else
+                RDAT = inf.RDAT
+                AGE = MAIN.GetCurrentAge(inf.RDAT)
+
+
+            End If
             stmp = ""
             For Each entry In ERRTEXT.Split(Environment.NewLine)
                 entry = entry.Replace(vbCr, "").Replace(vbLf, "")
                 If count = 0 Then
-                    infostring = String.Join(";", String.Format("{0} {1} {2}", inf.FA, inf.IM, inf.OT), inf.NPERS, NazDate, inf.RDAT, MAIN.GetCurrentAge(inf.RDAT), winf.SPOSOB)
+                    infostring = String.Join(";", String.Format("{0} {1} {2}", inf.FA, inf.IM, inf.OT), inf.NPERS, NazDate, RDAT, AGE, winf.SPOSOB)
                 Else
                     infostring = ";;;;;"
                 End If
@@ -646,57 +657,55 @@ Public Class MAIN
         BW_OPERATION.ReportProgress(count)
         ' MsgBox(count)
 
-        cmd.CommandText = "INSERT INTO IND4 (MAN_ID) SELECT ID FROM MAN ORDER BY ID;"
-        cmd.ExecuteNonQuery()
-        ''10 процентов
-        CurrState = "Подготовка базы к анализу. Процент готовности:"
-        BW_OPERATION.ReportProgress(10)
-        cmd.CommandText = "UPDATE IND4 SET FW_DO = (SELECT PAY_DO.AMOUNT FROM PAY_DO LEFT OUTER JOIN PAYTYPE ON PAY_DO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 1 AND PAY_DO.ACTION_TYPE = '4' AND PAY_DO.MAN_ID = IND4.MAN_ID);"
-        cmd.ExecuteNonQuery()
-        ''20 процентов
-        CurrState = "Подготовка базы к анализу. Процент готовности:"
-        BW_OPERATION.ReportProgress(20)
-        cmd.CommandText = "UPDATE IND4 SET SC_DO = (SELECT PAY_DO.AMOUNT FROM PAY_DO LEFT OUTER JOIN PAYTYPE ON PAY_DO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 2 AND PAY_DO.ACTION_TYPE = '4' AND PAY_DO.MAN_ID = IND4.MAN_ID); "
-        cmd.ExecuteNonQuery()
-        ''30 процентов
-        CurrState = "Подготовка базы к анализу. Процент готовности:"
-        BW_OPERATION.ReportProgress(30)
-        cmd.CommandText = "UPDATE IND4 SET SC_DOPL_DO = (SELECT PAY_DO.AMOUNT FROM PAY_DO LEFT OUTER JOIN PAYTYPE ON PAY_DO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 2 AND PAY_DO.ACTION_TYPE = '5' AND PAY_DO.MAN_ID = IND4.MAN_ID);"
-        cmd.ExecuteNonQuery()
-        ''40 процентов
-        CurrState = "Подготовка базы к анализу. Процент готовности:"
-        BW_OPERATION.ReportProgress(40)
-        cmd.CommandText = "UPDATE IND4 SET FW_DOPL_DO = (SELECT PAY_DO.AMOUNT FROM PAY_DO LEFT OUTER JOIN PAYTYPE ON PAY_DO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 1 AND PAY_DO.ACTION_TYPE = '5' AND PAY_DO.MAN_ID = IND4.MAN_ID);"
-        cmd.ExecuteNonQuery()
-        ''50 процентов
-        CurrState = "Подготовка базы к анализу. Процент готовности:"
-        BW_OPERATION.ReportProgress(50)
-        cmd.CommandText = "UPDATE IND4 SET FW_PO = (SELECT PAY_PO.AMOUNT FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 1 AND PAY_PO.ACTION_TYPE = '4' AND PAY_PO.MAN_ID = IND4.MAN_ID);"
-        cmd.ExecuteNonQuery()
-        ''60 процентов
-        CurrState = "Подготовка базы к анализу. Процент готовности:"
-        BW_OPERATION.ReportProgress(60)
-        cmd.CommandText = "UPDATE IND4 SET SC_PO = (SELECT PAY_PO.AMOUNT FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 2 AND PAY_PO.ACTION_TYPE = '4' AND PAY_PO.MAN_ID = IND4.MAN_ID);"
-        cmd.ExecuteNonQuery()
-        ''70 процентов
-        CurrState = "Подготовка базы к анализу. Процент готовности:"
-        BW_OPERATION.ReportProgress(70)
-        cmd.CommandText = "UPDATE IND4 SET SC_DOPL_PO = (SELECT PAY_PO.AMOUNT FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 2 AND PAY_PO.ACTION_TYPE = '5' AND PAY_PO.MAN_ID = IND4.MAN_ID);"
-        cmd.ExecuteNonQuery()
-        ''80 процентов
-        CurrState = "Подготовка базы к анализу. Процент готовности:"
-        BW_OPERATION.ReportProgress(80)
-        cmd.CommandText = "UPDATE IND4 SET FW_DOPL_PO = (SELECT PAY_PO.AMOUNT FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 1 AND PAY_PO.ACTION_TYPE = '5' AND PAY_PO.MAN_ID = IND4.MAN_ID);"
-        cmd.ExecuteNonQuery()
-        ''90 процентов
-        CurrState = "Подготовка базы к анализу. Процент готовности:"
-        BW_OPERATION.ReportProgress(90)
+        cmd.CommandText = $"
+CREATE VIEW FW_DO AS SELECT PAY_DO.MAN_ID, PAY_DO.AMOUNT FROM PAY_DO LEFT OUTER JOIN PAYTYPE ON PAY_DO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 1 AND PAY_DO.ACTION_TYPE = '4';
+INSERT OR IGNORE INTO IND4 (MAN_ID) SELECT MAN_ID FROM FW_DO;
+UPDATE IND4 SET FW_DO=(SELECT AMOUNT FROM FW_DO WHERE FW_DO.MAN_ID = IND4.MAN_ID);
+DROP VIEW FW_DO;
 
-        cmd.CommandText = "SELECT * from ind4 where abs(FW_DOPL_DO - FW_DOPL_PO) >0.1 OR ABS(FW_DO-FW_PO)>0.1 OR ABS(SC_DO-SC_PO)>0.1 or ABS(SC_DOPL_DO-SC_DOPL_PO)>0.1;"
+CREATE VIEW FW_DOPL_DO AS SELECT PAY_DO.MAN_ID, PAY_DO.AMOUNT FROM PAY_DO LEFT OUTER JOIN PAYTYPE ON PAY_DO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 1 AND PAY_DO.ACTION_TYPE = '5';
+INSERT OR IGNORE INTO IND4 (MAN_ID) SELECT MAN_ID FROM FW_DOPL_DO;
+UPDATE IND4 SET FW_DOPL_DO=(SELECT AMOUNT FROM FW_DOPL_DO WHERE FW_DOPL_DO.MAN_ID = IND4.MAN_ID);
+DROP VIEW FW_DOPL_DO;
+
+CREATE VIEW SC_DO AS SELECT PAY_DO.MAN_ID, PAY_DO.AMOUNT FROM PAY_DO LEFT OUTER JOIN PAYTYPE ON PAY_DO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 2 AND PAY_DO.ACTION_TYPE = '4';
+INSERT OR IGNORE INTO IND4 (MAN_ID) SELECT MAN_ID FROM SC_DO;
+UPDATE IND4 SET SC_DO=(SELECT AMOUNT FROM SC_DO WHERE SC_DO.MAN_ID = IND4.MAN_ID);
+DROP VIEW SC_DO;
+
+CREATE VIEW SC_DOPL_DO AS SELECT PAY_DO.MAN_ID, PAY_DO.AMOUNT FROM PAY_DO LEFT OUTER JOIN PAYTYPE ON PAY_DO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 2 AND PAY_DO.ACTION_TYPE = '5';
+INSERT OR IGNORE INTO IND4 (MAN_ID) SELECT MAN_ID FROM SC_DOPL_DO;
+UPDATE IND4 SET SC_DOPL_DO=(SELECT AMOUNT FROM SC_DOPL_DO WHERE SC_DOPL_DO.MAN_ID = IND4.MAN_ID);
+DROP VIEW SC_DOPL_DO;
+
+CREATE VIEW FW_PO AS SELECT PAY_PO.MAN_ID, PAY_PO.AMOUNT FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 1 AND PAY_PO.ACTION_TYPE = '4';
+INSERT OR IGNORE INTO IND4 (MAN_ID) SELECT MAN_ID FROM FW_PO;
+UPDATE IND4 SET FW_PO=(SELECT AMOUNT FROM FW_PO WHERE FW_PO.MAN_ID = IND4.MAN_ID);
+DROP VIEW FW_PO;
+
+
+CREATE VIEW FW_DOPL_PO AS SELECT PAY_PO.MAN_ID, PAY_PO.AMOUNT FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 1 AND PAY_PO.ACTION_TYPE = '5';
+INSERT OR IGNORE INTO IND4 (MAN_ID) SELECT MAN_ID FROM FW_DOPL_PO;
+UPDATE IND4 SET FW_DOPL_PO=(SELECT AMOUNT FROM FW_DOPL_PO WHERE FW_DOPL_PO.MAN_ID = IND4.MAN_ID);
+DROP VIEW FW_DOPL_PO;
+
+
+CREATE VIEW SC_PO AS SELECT PAY_PO.MAN_ID, PAY_PO.AMOUNT FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 2 AND PAY_PO.ACTION_TYPE = '4';
+INSERT OR IGNORE INTO IND4 (MAN_ID) SELECT MAN_ID FROM SC_PO;
+UPDATE IND4 SET SC_PO=(SELECT AMOUNT FROM SC_PO WHERE SC_PO.MAN_ID = IND4.MAN_ID);
+DROP VIEW SC_PO;
+
+CREATE VIEW SC_DOPL_PO AS SELECT PAY_PO.MAN_ID, PAY_PO.AMOUNT FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK = 2 AND PAY_PO.ACTION_TYPE = '5';
+INSERT OR IGNORE INTO IND4 (MAN_ID) SELECT MAN_ID FROM SC_DOPL_PO;
+UPDATE IND4 SET SC_DOPL_PO=(SELECT AMOUNT FROM SC_DOPL_PO WHERE SC_DOPL_PO.MAN_ID = IND4.MAN_ID);
+DROP VIEW SC_DOPL_PO;"
+        cmd.ExecuteNonQuery()
+
+        cmd.CommandText = "SELECT * from ind4 where abs(FW_DOPL_DO - FW_DOPL_PO) >0.1 Or ABS(FW_DO-FW_PO)>0.1 Or ABS(SC_DO-SC_PO)>0.1 Or ABS(SC_DOPL_DO-SC_DOPL_PO)>0.1;"
         '  Dim MEN As New List(Of String)
 
         dbreader = cmd.ExecuteReader
-        CurrState = "Обнажуено изменений:"
+        CurrState = "Обнажуено изменений"
         Dim stmp As String = "РАЙОН;ИНДЕКС;ФАМИЛИЯ;ИМЯ;ОТЧЕСТВО;СНИЛС;ДАТА РОЖДЕНИЯ;ДАТА НАЗ.;ПЕНСИЯ ДО;ПЕНСИЯ ПОСЛЕ;ИЗМ. ПЕНСИИ;ДОПЛАТА ДО;ДОПЛАТА ПОСЛЕ;ИЗМ. ДОПЛАТЫ;РАБОТА ДО;РАБОТА ПОСЛЕ;СПОСОБ ПОЛУЧЕНИЯ;ВИД ВЫПЛ." & Environment.NewLine
         ' Dim INDX4 As New List(Of INDEX4_STRING)
         While dbreader.Read
@@ -720,7 +729,7 @@ Public Class MAIN
             ind4.OT = man_inf.OT
             ind4.NPERS = man_inf.NPERS
 
-            ind4.NAZN =  man_inf.NAZN.ToString().Replace(" 0:00:00", "")
+            ind4.NAZN =  man_inf.NAZN.ToString().Replace(" 000:00", "")
             ind4.RDAT = man_inf.RDAT
             Dim wrk_inf As WORK_STATUS = GetWorkState(dbreader(0))
             ind4.WORK_DO = wrk_inf.WORK_DO
@@ -735,7 +744,7 @@ Public Class MAIN
         End While
         dbreader.Close()
         ''validate workstat
-        cmd.CommandText = "SELECT * FROM IND4 WHERE ((((ABS(FW_DO -FW_PO) < 0.1 AND FW_DO <> 0) and FW_DOPL_DO = FW_DOPL_PO) OR ((ABS(SC_DO - SC_PO)<0.1 AND SC_DO <> 0)AND SC_DOPL_DO=SC_DOPL_PO))) AND IND4.MAN_ID IN (SELECT POPEN_PO.ID FROM popen_do LEFT JOIN POPEN_PO ON POPEN_DO.ID = POPEN_PO.ID WHERE POPEN_DO.STATUSR ='Д' AND POPEN_PO.STATUSR='Н');"
+        cmd.CommandText = "SELECT * FROM IND4 WHERE ((((ABS(FW_DO -FW_PO) < 0.1 And FW_DO <> 0) And FW_DOPL_DO = FW_DOPL_PO) Or ((ABS(SC_DO - SC_PO)<0.1 And SC_DO <> 0)And SC_DOPL_DO=SC_DOPL_PO))) And IND4.MAN_ID IN (SELECT POPEN_PO.ID FROM popen_do LEFT JOIN POPEN_PO ON POPEN_DO.ID = POPEN_PO.ID WHERE POPEN_DO.STATUSR ='Д' AND POPEN_PO.STATUSR='Н');"
 
         dbreader = cmd.ExecuteReader
         CurrState = "Завершение проверки: "
@@ -816,12 +825,13 @@ Public Class MAIN
         End While
 
 
-
+        ''СЧЕТЧИК СБОИТ ИЗЗА ДВУХ ПОСЛЕДУЮЩИХ ФУНКЦИЙ НЕ УЧИТЫВАЯ ЛЮЖДЕЙ В НИХ
         ValidatePensInfo()
+        Validate_OtherDopl()
 
         BW_OPERATION.ReportProgress(-1)
         Dim FileToSave As String = Application.StartupPath & "\INDEX_4(" & DB_RA & ")-" & String.Join(".", Date.Today.Day.ToString(), Date.Today.Month.ToString(), Date.Today.Year.ToString) & " " & String.Join("-", DateTime.Now.Hour.ToString(), DateTime.Now.Minute.ToString()) & ".CSV"
-        IO.File.WriteAllText(FileToSave, stmp)
+        IO.File.WriteAllText(FileToSave, stmp, GetEncoding(1251))
         ' If MsgBox("Открыть список пенсионеров, у которых изменилась пенсия?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then Process.Start(FileToSave)
         Try
             CurrState = "Формирование отчета "
@@ -845,10 +855,13 @@ Public Class MAIN
         Select Case type
             Case 1 'DO
                 prefix = "SUMM_DO"
-                kmnd = "SELECT PAY_DO.MAN_ID, PAY_DO.AMOUNT, paytype.PRIZNAK, PAY_DO.ACTION_TYPE, PAY_DO.ID FROM PAY_DO LEFT OUTER JOIN PAYTYPE ON PAY_DO.IST = PAYTYPE.IST WHERE ((PAYTYPE.PRIZNAK = 1 OR PAYTYPE.PRIZNAK = 2) AND PAY_DO.ACTION_TYPE = '4' OR ((PAYTYPE.PRIZNAK = 1 OR PAYTYPE.PRIZNAK = 2) AND PAY_DO.ACTION_TYPE = '5')) AND PAY_DO.MAN_ID = '" & man_id & "'"
+                'kmnd = "SELECT PAY_DO.MAN_ID, PAY_DO.AMOUNT, paytype.PRIZNAK, PAY_DO.ACTION_TYPE, PAY_DO.ID FROM PAY_DO LEFT OUTER JOIN PAYTYPE ON PAY_DO.IST = PAYTYPE.IST WHERE ((PAYTYPE.PRIZNAK = 1 OR PAYTYPE.PRIZNAK = 2) AND PAY_DO.ACTION_TYPE = '4' OR ((PAYTYPE.PRIZNAK = 1 OR PAYTYPE.PRIZNAK = 2) AND PAY_DO.ACTION_TYPE = '5')) AND PAY_DO.MAN_ID = '" & man_id & "'"
+                kmnd = "SELECT PAY_DO.MAN_ID, PAY_DO.AMOUNT, paytype.PRIZNAK, PAY_DO.ACTION_TYPE, PAY_DO.ID FROM PAY_DO LEFT OUTER JOIN PAYTYPE ON PAY_DO.IST = PAYTYPE.IST WHERE ( PAY_DO.ACTION_TYPE = '4' OR ( PAY_DO.ACTION_TYPE = '5')) AND PAY_DO.MAN_ID = '" & man_id & "'"
+
             Case 2 'po
                 prefix = "SUMM_PO"
-                kmnd = "SELECT PAY_PO.MAN_ID, PAY_PO.AMOUNT, paytype.PRIZNAK, PAY_PO.ACTION_TYPE, PAY_PO.ID FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE ((PAYTYPE.PRIZNAK = 1 OR PAYTYPE.PRIZNAK = 2) AND PAY_PO.ACTION_TYPE = '4' OR ((PAYTYPE.PRIZNAK = 1 OR PAYTYPE.PRIZNAK = 2) AND PAY_PO.ACTION_TYPE = '5')) AND PAY_PO.MAN_ID = '" & man_id & "'"
+                'kmnd = "SELECT PAY_PO.MAN_ID, PAY_PO.AMOUNT, paytype.PRIZNAK, PAY_PO.ACTION_TYPE, PAY_PO.ID FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE ((PAYTYPE.PRIZNAK = 1 OR PAYTYPE.PRIZNAK = 2) AND PAY_PO.ACTION_TYPE = '4' OR ((PAYTYPE.PRIZNAK = 1 OR PAYTYPE.PRIZNAK = 2) AND PAY_PO.ACTION_TYPE = '5')) AND PAY_PO.MAN_ID = '" & man_id & "'"
+                kmnd = "SELECT PAY_PO.MAN_ID, PAY_PO.AMOUNT, paytype.PRIZNAK, PAY_PO.ACTION_TYPE, PAY_PO.ID FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE ( PAY_PO.ACTION_TYPE = '4' OR ( PAY_PO.ACTION_TYPE = '5')) AND PAY_PO.MAN_ID = '" & man_id & "'"
 
         End Select
         Dim sqlite_con As New SQLite.SQLiteConnection()
@@ -882,6 +895,25 @@ Public Class MAIN
             End Using
         End Using
     End Function
+    Private Sub Validate_OtherDopl()
+        Dim db As New DB_ENGINE
+        db.RunSimpleCmd("INSERT INTO DOPL_CHECK (MAN_ID) SELECT PAY_PO.MAN_ID FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK <> 1 AND PAYTYPE.PRIZNAK <> 2 AND PAYTYPE.PRIZNAK <> 4 AND PAYTYPE.PRIZNAK <> 5 AND PAYTYPE.PRIZNAK <> 7 AND PAY_PO.ACTION_TYPE = '5' AND INFO_TYPE <>1000;")
+        db.RunSimpleCmd("UPDATE DOPL_CHECK SET DOPL_DO=(SELECT AMOUNT FROM PAY_DO LEFT OUTER JOIN PAYTYPE ON PAY_DO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK <> 1 AND PAYTYPE.PRIZNAK <> 2 AND PAY_DO.ACTION_TYPE = '5' AND INFO_TYPE <>1000 AND PAY_DO.MAN_ID=DOPL_CHECK.MAN_ID);")
+        db.RunSimpleCmd("UPDATE DOPL_CHECK SET DOPL_PO=(SELECT AMOUNT FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK <> 1 AND PAYTYPE.PRIZNAK <> 2 AND PAYTYPE.PRIZNAK <> 4 AND PAYTYPE.PRIZNAK <> 5 AND PAYTYPE.PRIZNAK <> 7 AND PAY_PO.ACTION_TYPE = '5' AND INFO_TYPE <>1000 AND PAY_PO.MAN_ID=DOPL_CHECK.MAN_ID);")
+        db.RunSimpleCmd("UPDATE DOPL_CHECK SET IST=(SELECT PAY_PO.IST FROM PAY_PO LEFT OUTER JOIN PAYTYPE ON PAY_PO.IST = PAYTYPE.IST WHERE PAYTYPE.PRIZNAK <> 1 AND PAYTYPE.PRIZNAK <> 2 AND PAYTYPE.PRIZNAK <> 4 AND PAYTYPE.PRIZNAK <> 5 AND PAYTYPE.PRIZNAK <> 7 AND PAY_PO.ACTION_TYPE = '5' AND INFO_TYPE <>1000 AND PAY_PO.MAN_ID=DOPL_CHECK.MAN_ID);")
+        Dim cmd As New SQLite.SQLiteCommand(db.Open)
+        cmd.CommandText = ("SELECT * FROM DOPL_CHECK WHERE DOPL_DO<>DOPL_PO;")
+        Dim reader As SQLite.SQLiteDataReader = cmd.ExecuteReader()
+        While reader.Read()
+            Dim Err_record As New ERR_REPORT
+            Err_record.MAN_ID = reader(0)
+            Err_record.ERRTEXT &= "Проверьте доплату" & Environment.NewLine
+            Err_record.ERRTEXT &= String.Format("Доплата ДО: {0} Доплата ПО {1} Источник {2}", reader(2), reader(3), reader(1)) & Environment.NewLine
+            Reports.Add(Err_record)
+        End While
+        db.Close()
+        db.RunSimpleCmd("DELETE FROM DOPL_CHECK")
+    End Sub
     Private Sub Validate_Summ(ind4 As INDEX4_STRING)
         Dim Err_record As New ERR_REPORT
         Err_record.MAN_ID = ind4.MAN_ID
@@ -1177,7 +1209,7 @@ Public Class MAIN
         sqlite_con.Open()
         ''GET info
         cmd = sqlite_con.CreateCommand
-        cmd.CommandText = "SELECT * FROM POPEN_DO LEFT OUTER JOIN POPEN_PO ON POPEN_DO.ID=POPEN_PO.ID where (POPEN_DO.NP<>POPEN_PO.NP AND (POPEN_PO.NP = 'ПРИ' OR POPEN_PO.NP = 'ПРЕ' OR POPEN_PO.NP = 'СНЯ')) OR POPEN_DO.SROKPO <> POPEN_PO.SROKPO"
+        cmd.CommandText = "SELECT * FROM POPEN_DO LEFT OUTER JOIN POPEN_PO ON POPEN_DO.ID=POPEN_PO.ID where (POPEN_DO.NP<>POPEN_PO.NP AND (POPEN_PO.NP = 'ПРИ' OR POPEN_PO.NP = 'ПРЕ' OR POPEN_PO.NP = 'СНЯ' OR POPEN_DO.NP = 'ПРИ' OR POPEN_DO.NP = 'ПРЕ' OR POPEN_DO.NP = 'СНЯ')) OR POPEN_DO.SROKPO <> POPEN_PO.SROKPO"
         Dim dbreader As SQLite.SQLiteDataReader = cmd.ExecuteReader
         Dim stmp As String = ""
         While dbreader.Read
